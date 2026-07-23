@@ -17,24 +17,12 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    # Scopes secrets.SUPABASE_URL / secrets.SUPABASE_ANON_KEY below to the
-    # "production" GitHub Environment (Settings → Environments), not plain
-    # repo-level secrets. Swapping Supabase projects later = updating the
-    # secrets on that one environment.
-    environment: production
+    # TODO: Supabase URL/anon key are currently hardcoded in index.html
+    # rather than injected from GitHub Environment secrets here — see the
+    # TODO comment in index.html for why. Once that's fixed, this job
+    # should go back to `environment: production` and a substitution step.
     steps:
       - uses: actions/checkout@v4
-
-      - name: Generate runtime-config.js
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-        run: |
-          printf 'window.SUPABASE_CONFIG = {\n  url: "%s",\n  anonKey: "%s"\n};\n' "$SUPABASE_URL" "$SUPABASE_ANON_KEY" > runtime-config.js
-          test -s runtime-config.js || (echo "::error::runtime-config.js was not created" && exit 1)
-          echo "Generated runtime-config.js ($(wc -c < runtime-config.js) bytes):"
-          cat runtime-config.js
-
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

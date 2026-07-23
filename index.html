@@ -9,11 +9,18 @@
         integrity="sha384-Ty9WrQxUB1vb9rF2T/wNBTcyJbiR5tK7e3gTrDGAbepOnWoasjD9lNXP4z0QkZML" crossorigin="anonymous" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.8/dist/umd/supabase.js"
           integrity="sha384-M65KxMm/JqBppck6onbmAgPVMBHrmPCf1L17Q+71EcvI9/VVI8j5cqoxQf6lj6h2" crossorigin="anonymous"></script>
-  <!-- runtime-config.js isn't in the repo — the deploy workflow generates it
-       at build time from the "production" GitHub Environment's Supabase
-       secrets. (Named runtime-config.js rather than config.js to dodge a
-       CDN negative-cache that got stuck on that path during setup.) -->
-  <script src="runtime-config.js"></script>
+  <!-- TODO: hardcoded temporarily to unblock deployment — GitHub Pages
+       wasn't serving runtime-generated/substituted files for this
+       deployment, for reasons still unresolved. Move this back to
+       secret-driven injection (GitHub Environment secrets, substituted at
+       deploy time) once that's sorted out, so dev/prod can use different
+       Supabase projects without editing this file. -->
+  <script>
+    window.SUPABASE_CONFIG = {
+      url: "https://bpivuytjhmuavzqtbxdc.supabase.co",
+      anonKey: "sb_publishable_ucxCsPTJqJyw7C7oYrwmCg_-7OSuF-y"
+    };
+  </script>
 </head>
 <body>
   <div id="boot-loading" class="boot-loading">Loading…</div>
