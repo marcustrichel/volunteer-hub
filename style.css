@@ -259,7 +259,7 @@ h3 { font-size: 15px; font-weight: 500; margin-bottom: .5rem; }
   font-size: 14px;
 }
 
-#auth-screen {
+#auth-screen, #password-setup-screen {
   min-height: 100vh;
   display: flex; align-items: center; justify-content: center;
 }

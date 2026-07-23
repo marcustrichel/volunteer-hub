@@ -39,6 +39,19 @@
     </div>
   </div>
 
+  <div id="password-setup-screen" class="hidden">
+    <div class="auth-card">
+      <h2 style="margin-bottom:.25rem"><i class="ti ti-heart" aria-hidden="true" style="color:#1D9E75"></i> Volunteer Hub</h2>
+      <p class="subtitle" style="margin-bottom:1.25rem">Set your password to continue</p>
+      <div id="password-setup-error" class="auth-error"></div>
+      <label>New password</label>
+      <input type="password" id="new-password" placeholder="••••••••" autocomplete="new-password">
+      <label style="margin-top:.5rem">Confirm password</label>
+      <input type="password" id="new-password-confirm" placeholder="••••••••" autocomplete="new-password">
+      <button class="btn btn-primary" style="width:100%;margin-top:1rem" onclick="submitNewPassword()">Set password</button>
+    </div>
+  </div>
+
   <div class="app hidden" id="app-root">
     <h2 style="margin-bottom:.25rem"><i class="ti ti-heart" aria-hidden="true" style="color:#1D9E75"></i> Volunteer Hub</h2>
     <p class="subtitle">Manage your team, track hours &amp; reward dedication</p>

@@ -19,6 +19,10 @@ const supabaseClient = (configOk && window.supabase)
   ? window.supabase.createClient(window.SUPABASE_CONFIG.url, window.SUPABASE_CONFIG.anonKey)
   : null;
 
+// Captured before Supabase's client processes/clears the URL, so we can
+// tell an invite/recovery link apart from a normal sign-in.
+const authRedirectType = new URLSearchParams(window.location.hash.slice(1)).get('type');
+
 // ─── State ───────────────────────────────────────────────────────────────────
 
 let state = { volunteers: [], logs: [], swag: [], groupName: 'My Volunteers' };
@@ -29,15 +33,40 @@ let dataLoaded = false;
 function showAuthScreen() {
   document.getElementById('boot-loading')?.classList.add('hidden');
   document.getElementById('app-root').classList.add('hidden');
+  document.getElementById('password-setup-screen').classList.add('hidden');
   document.getElementById('auth-screen').classList.remove('hidden');
 }
 
 function showApp(session) {
   document.getElementById('boot-loading')?.classList.add('hidden');
   document.getElementById('auth-screen').classList.add('hidden');
+  document.getElementById('password-setup-screen').classList.add('hidden');
   document.getElementById('app-root').classList.remove('hidden');
   const emailEl = document.getElementById('account-email');
   if (emailEl) emailEl.textContent = 'Signed in as ' + (session.user.email || '');
+}
+
+function showPasswordSetup() {
+  document.getElementById('boot-loading')?.classList.add('hidden');
+  document.getElementById('auth-screen').classList.add('hidden');
+  document.getElementById('app-root').classList.add('hidden');
+  document.getElementById('password-setup-screen').classList.remove('hidden');
+}
+
+async function submitNewPassword() {
+  const pw = document.getElementById('new-password').value;
+  const pw2 = document.getElementById('new-password-confirm').value;
+  const errEl = document.getElementById('password-setup-error');
+  errEl.textContent = '';
+  if (!pw || pw.length < 6) { errEl.textContent = 'Password must be at least 6 characters.'; return; }
+  if (pw !== pw2) { errEl.textContent = 'Passwords do not match.'; return; }
+  const { error } = await supabaseClient.auth.updateUser({ password: pw });
+  if (error) { errEl.textContent = error.message; return; }
+  history.replaceState(null, '', window.location.pathname);
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!dataLoaded) { dataLoaded = true; await loadState(); }
+  showApp(session);
+  toast('Password set — you\'re signed in!');
 }
 
 async function signIn() {
@@ -64,6 +93,10 @@ function initAuth() {
     return;
   }
   supabaseClient.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'PASSWORD_RECOVERY' || (session && (authRedirectType === 'recovery' || authRedirectType === 'invite'))) {
+      showPasswordSetup();
+      return;
+    }
     if (session) {
       if (!dataLoaded) { dataLoaded = true; await loadState(); }
       showApp(session);
