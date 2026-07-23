@@ -25,15 +25,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Generate config.js
+      - name: Generate runtime-config.js
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
-          printf 'window.SUPABASE_CONFIG = {\n  url: "%s",\n  anonKey: "%s"\n};\n' "$SUPABASE_URL" "$SUPABASE_ANON_KEY" > config.js
-          test -s config.js || (echo "::error::config.js was not created" && exit 1)
-          echo "Generated config.js ($(wc -c < config.js) bytes):"
-          cat config.js
+          printf 'window.SUPABASE_CONFIG = {\n  url: "%s",\n  anonKey: "%s"\n};\n' "$SUPABASE_URL" "$SUPABASE_ANON_KEY" > runtime-config.js
+          test -s runtime-config.js || (echo "::error::runtime-config.js was not created" && exit 1)
+          echo "Generated runtime-config.js ($(wc -c < runtime-config.js) bytes):"
+          cat runtime-config.js
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

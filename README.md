@@ -22,7 +22,7 @@ The app is a zero-build static site (`index.html` + `app.js` + `style.css`) back
 
 ## Deploying
 
-A GitHub Actions workflow (`.github/workflows/deploy.yml`) builds `config.js` (which sets `window.SUPABASE_CONFIG`) from the **`production`** GitHub Environment's secrets and deploys to GitHub Pages on every push to `main`. One-time setup:
+A GitHub Actions workflow (`.github/workflows/deploy.yml`) builds `runtime-config.js` (which sets `window.SUPABASE_CONFIG`) from the **`production`** GitHub Environment's secrets and deploys to GitHub Pages on every push to `main`. One-time setup:
 
 1. **Settings → Environments**, create an environment named `production`.
 2. In that environment, add secrets:
@@ -35,7 +35,7 @@ Since the anon key is meant to be public (access is controlled by Row Level Secu
 
 Switching from your personal dev Supabase project to a production/nonprofit one later is just a matter of updating those two secrets on the `production` environment — no code changes needed.
 
-There's no supported way to run the app locally against real data — it only becomes usable once deployed, since that's the only place `config.js` ever gets generated. To test a change, push it (or merge it to `main`) and check the deployed site.
+There's no supported way to run the app locally against real data — it only becomes usable once deployed, since that's the only place `runtime-config.js` ever gets generated. To test a change, push it (or merge it to `main`) and check the deployed site.
 
 ## Database
 
@@ -55,8 +55,9 @@ volunteer-hub/
 ├── style.css                 # all styles
 ├── app.js                    # all logic, Supabase client, auth, rendering
 ├── supabase/schema.sql       # DB schema, RLS policies, seed data
-├── .github/workflows/deploy.yml  # generates config.js from the "production"
-│                                  # environment's secrets, deploys to Pages
+├── .github/workflows/deploy.yml  # generates runtime-config.js from the
+│                                  # "production" environment's secrets,
+│                                  # deploys to Pages
 └── README.md
 ```
 
