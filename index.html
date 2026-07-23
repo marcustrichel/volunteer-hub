@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Volunteer Hub</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.45.0/tabler-icons.min.css"
+        integrity="sha384-/Bmojb1H/9dHvtYa2TzEQ1MldjNefaS+t7DcnOYHpP+yer5gvd3LONWEpWhHK+Yo" crossorigin="anonymous" />
+</head>
+<body>
+  <div class="app">
+    <h2 style="margin-bottom:.25rem"><i class="ti ti-heart" aria-hidden="true" style="color:#1D9E75"></i> Volunteer Hub</h2>
+    <p class="subtitle">Manage your team, track hours &amp; reward dedication</p>
+
+    <nav>
+      <button class="active" onclick="goto('dashboard')"><i class="ti ti-layout-dashboard" aria-hidden="true"></i> Dashboard</button>
+      <button onclick="goto('volunteers')"><i class="ti ti-users" aria-hidden="true"></i> Volunteers</button>
+      <button onclick="goto('log')"><i class="ti ti-clock" aria-hidden="true"></i> Log Hours</button>
+      <button onclick="goto('swag')"><i class="ti ti-star" aria-hidden="true"></i> Swag Vault</button>
+      <button onclick="goto('settings')"><i class="ti ti-settings" aria-hidden="true"></i> Settings</button>
+    </nav>
+
+    <!-- Dashboard -->
+    <div id="page-dashboard" class="page active">
+      <div class="metric-grid" id="metrics"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+        <div class="card" style="margin-bottom:0"><h3>🏆 Top volunteers</h3><div id="top-vols"></div></div>
+        <div class="card" style="margin-bottom:0"><h3>📅 Upcoming dates</h3><div id="upcoming-dates"></div></div>
+      </div>
+      <div class="card" style="margin-top:1rem"><h3>Recent activity</h3><div id="recent-activity"></div></div>
+    </div>
+
+    <!-- Volunteers -->
+    <div id="page-volunteers" class="page">
+      <div class="section-header">
+        <h2 style="margin:0">Volunteers</h2>
+        <button class="btn btn-primary" onclick="openAddVol()"><i class="ti ti-plus" aria-hidden="true"></i> Add volunteer</button>
+      </div>
+      <div class="search-wrap"><i class="ti ti-search" aria-hidden="true"></i><input type="text" id="vol-search" placeholder="Search volunteers…" oninput="renderVols()"></div>
+      <div id="vol-list" class="vol-grid"></div>
+    </div>
+
+    <!-- Log Hours -->
+    <div id="page-log" class="page">
+      <h2>Log hours</h2>
+      <div class="card">
+        <div class="form-row">
+          <div><label>Volunteer</label><select id="log-vol"></select></div>
+          <div><label>Hours</label><input type="number" id="log-hrs" min=".5" step=".5" placeholder="e.g. 3"></div>
+        </div>
+        <div class="form-row">
+          <div><label>Date</label><input type="date" id="log-date"></div>
+          <div><label>Activity / note</label><input type="text" id="log-note" placeholder="e.g. Food bank shift"></div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary" onclick="submitLog()"><i class="ti ti-check" aria-hidden="true"></i> Log hours</button>
+          <button class="btn" onclick="bulkLogOpen()"><i class="ti ti-list" aria-hidden="true"></i> Bulk log</button>
+        </div>
+      </div>
+      <h3 style="margin-bottom:.75rem">Recent log</h3>
+      <div id="log-list"></div>
+    </div>
+
+    <!-- Swag Vault -->
+    <div id="page-swag" class="page">
+      <div class="section-header">
+        <h2 style="margin:0">Swag Vault</h2>
+        <button class="btn" onclick="openSwagEdit()"><i class="ti ti-edit" aria-hidden="true"></i> Edit rewards</button>
+      </div>
+      <p class="subtitle" style="margin-bottom:1rem">Volunteers earn exclusive items by hitting hour milestones. Items are cumulative.</p>
+      <div id="swag-tiers" class="swag-grid"></div>
+      <hr class="divider">
+      <h3 style="margin-bottom:.75rem">Volunteer progress</h3>
+      <div id="swag-progress"></div>
+    </div>
+
+    <!-- Settings -->
+    <div id="page-settings" class="page">
+      <h2>Settings</h2>
+      <div class="card">
+        <h3>Group name</h3>
+        <div style="display:flex;gap:8px;margin-top:.5rem">
+          <input type="text" id="group-name-input" placeholder="My Volunteer Group">
+          <button class="btn btn-primary" onclick="saveGroupName()">Save</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Data management</h3>
+        <p class="subtitle" style="margin-bottom:.75rem">Export or reset your volunteer data.</p>
+        <div style="display:flex;gap:8px">
+          <button class="btn" onclick="exportData()"><i class="ti ti-download" aria-hidden="true"></i> Export JSON</button>
+          <button class="btn btn-danger" onclick="confirmReset()"><i class="ti ti-trash" aria-hidden="true"></i> Reset all data</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <div id="modals"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
