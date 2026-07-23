@@ -15,7 +15,7 @@ const DEFAULT_SWAG = [
 // ─── Supabase client ─────────────────────────────────────────────────────────
 
 const configOk = !!(window.SUPABASE_CONFIG && window.SUPABASE_CONFIG.url && !window.SUPABASE_CONFIG.url.includes('YOUR_PROJECT'));
-const supabase = (configOk && window.supabase)
+const supabaseClient = (configOk && window.supabase)
   ? window.supabase.createClient(window.SUPABASE_CONFIG.url, window.SUPABASE_CONFIG.anonKey)
   : null;
 
@@ -46,16 +46,16 @@ async function signIn() {
   const errEl = document.getElementById('auth-error');
   errEl.textContent = '';
   if (!email || !password) { errEl.textContent = 'Enter your email and password.'; return; }
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
   if (error) errEl.textContent = error.message;
 }
 
 async function signOut() {
-  await supabase.auth.signOut();
+  await supabaseClient.auth.signOut();
 }
 
 function initAuth() {
-  if (!supabase) {
+  if (!supabaseClient) {
     document.getElementById('boot-loading')?.classList.add('hidden');
     document.getElementById('auth-error').textContent = !window.supabase
       ? "Couldn't load the Supabase library — check your internet connection and reload."
@@ -63,7 +63,7 @@ function initAuth() {
     document.getElementById('auth-screen').classList.remove('hidden');
     return;
   }
-  supabase.auth.onAuthStateChange(async (event, session) => {
+  supabaseClient.auth.onAuthStateChange(async (event, session) => {
     if (session) {
       if (!dataLoaded) { dataLoaded = true; await loadState(); }
       showApp(session);
@@ -80,10 +80,10 @@ function initAuth() {
 async function loadState() {
   try {
     const [volRes, logRes, swagRes, settingsRes] = await Promise.all([
-      supabase.from('volunteers').select('*').order('created_at'),
-      supabase.from('logs').select('*'),
-      supabase.from('swag').select('*'),
-      supabase.from('app_settings').select('*').eq('id', 1).single(),
+      supabaseClient.from('volunteers').select('*').order('created_at'),
+      supabaseClient.from('logs').select('*'),
+      supabaseClient.from('swag').select('*'),
+      supabaseClient.from('app_settings').select('*').eq('id', 1).single(),
     ]);
     const failed = [volRes, logRes, swagRes, settingsRes].find(r => r.error);
     if (failed) throw failed.error;
@@ -102,19 +102,19 @@ async function loadState() {
 }
 
 async function refetchVolunteers() {
-  const { data, error } = await supabase.from('volunteers').select('*').order('created_at');
+  const { data, error } = await supabaseClient.from('volunteers').select('*').order('created_at');
   if (error) { toast('Failed to load volunteers: ' + error.message); return; }
   state.volunteers = data || [];
 }
 
 async function refetchLogs() {
-  const { data, error } = await supabase.from('logs').select('*');
+  const { data, error } = await supabaseClient.from('logs').select('*');
   if (error) { toast('Failed to load logs: ' + error.message); return; }
   state.logs = data || [];
 }
 
 async function refetchSwag() {
-  const { data, error } = await supabase.from('swag').select('*');
+  const { data, error } = await supabaseClient.from('swag').select('*');
   if (error) { toast('Failed to load swag: ' + error.message); return; }
   state.swag = data || [];
 }
@@ -314,8 +314,8 @@ async function saveVol(editId) {
     custom_date_1:        document.getElementById('m-cd').value || null,
   };
   const { error } = editId
-    ? await supabase.from('volunteers').update(payload).eq('id', editId)
-    : await supabase.from('volunteers').insert(payload);
+    ? await supabaseClient.from('volunteers').update(payload).eq('id', editId)
+    : await supabaseClient.from('volunteers').insert(payload);
   if (error) { toast('Save failed: ' + error.message); return; }
   await refetchVolunteers();
   closeModal();
@@ -394,7 +394,7 @@ function openEditVol(id) {
 
 async function deleteVol(id) {
   if (!confirm('Remove this volunteer and all their logs?')) return;
-  const { error } = await supabase.from('volunteers').delete().eq('id', id);
+  const { error } = await supabaseClient.from('volunteers').delete().eq('id', id);
   if (error) { toast('Delete failed: ' + error.message); return; }
   await Promise.all([refetchVolunteers(), refetchLogs()]);
   closeModal();
@@ -417,7 +417,7 @@ async function submitLog() {
   const date = document.getElementById('log-date').value;
   const note = document.getElementById('log-note').value;
   if (!vid || !hrs || hrs <= 0 || !date) { toast('Please select a volunteer, date, and hours.'); return; }
-  const { error } = await supabase.from('logs').insert({ vid, hrs, date, note });
+  const { error } = await supabaseClient.from('logs').insert({ vid, hrs, date, note });
   if (error) { toast('Log failed: ' + error.message); return; }
   await refetchLogs();
   toast('Hours logged! ✓');
@@ -453,7 +453,7 @@ function renderLogList() {
 }
 
 async function deleteLog(id) {
-  const { error } = await supabase.from('logs').delete().eq('id', id);
+  const { error } = await supabaseClient.from('logs').delete().eq('id', id);
   if (error) { toast('Delete failed: ' + error.message); return; }
   await refetchLogs();
   renderLogList();
@@ -483,7 +483,7 @@ async function submitBulkLog() {
   const selected = state.volunteers.filter(v => document.getElementById('bl-' + v.id)?.checked);
   if (!selected.length) { toast('Select at least one volunteer.'); return; }
   const rows = selected.map(v => ({ vid: v.id, hrs, date, note }));
-  const { error } = await supabase.from('logs').insert(rows);
+  const { error } = await supabaseClient.from('logs').insert(rows);
   if (error) { toast('Log failed: ' + error.message); return; }
   await refetchLogs();
   closeModal();
@@ -579,16 +579,16 @@ async function saveSwag() {
 
   try {
     if (toDelete.length) {
-      const { error } = await supabase.from('swag').delete().in('id', toDelete);
+      const { error } = await supabaseClient.from('swag').delete().in('id', toDelete);
       if (error) throw error;
     }
     for (const row of toUpdate) {
       const { id, ...rest } = row;
-      const { error } = await supabase.from('swag').update(rest).eq('id', id);
+      const { error } = await supabaseClient.from('swag').update(rest).eq('id', id);
       if (error) throw error;
     }
     if (toInsert.length) {
-      const { error } = await supabase.from('swag').insert(toInsert);
+      const { error } = await supabaseClient.from('swag').insert(toInsert);
       if (error) throw error;
     }
   } catch (e) {
@@ -604,7 +604,7 @@ async function saveSwag() {
 
 async function saveGroupName() {
   const name = document.getElementById('group-name-input').value.trim() || 'My Volunteers';
-  const { error } = await supabase.from('app_settings').update({ group_name: name }).eq('id', 1);
+  const { error } = await supabaseClient.from('app_settings').update({ group_name: name }).eq('id', 1);
   if (error) { toast('Save failed: ' + error.message); return; }
   state.groupName = name;
   toast('Saved!');
@@ -621,15 +621,15 @@ function exportData() {
 async function confirmReset() {
   if (!confirm('Reset ALL data? This cannot be undone.')) return;
   try {
-    let res = await supabase.from('logs').delete().not('id', 'is', null);
+    let res = await supabaseClient.from('logs').delete().not('id', 'is', null);
     if (res.error) throw res.error;
-    res = await supabase.from('volunteers').delete().not('id', 'is', null);
+    res = await supabaseClient.from('volunteers').delete().not('id', 'is', null);
     if (res.error) throw res.error;
-    res = await supabase.from('swag').delete().not('id', 'is', null);
+    res = await supabaseClient.from('swag').delete().not('id', 'is', null);
     if (res.error) throw res.error;
-    res = await supabase.from('swag').insert(DEFAULT_SWAG);
+    res = await supabaseClient.from('swag').insert(DEFAULT_SWAG);
     if (res.error) throw res.error;
-    res = await supabase.from('app_settings').update({ group_name: 'My Volunteers' }).eq('id', 1);
+    res = await supabaseClient.from('app_settings').update({ group_name: 'My Volunteers' }).eq('id', 1);
     if (res.error) throw res.error;
   } catch (e) {
     toast('Reset failed: ' + e.message);
