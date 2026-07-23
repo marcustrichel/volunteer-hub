@@ -7,9 +7,28 @@
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.45.0/tabler-icons.min.css"
         integrity="sha384-/Bmojb1H/9dHvtYa2TzEQ1MldjNefaS+t7DcnOYHpP+yer5gvd3LONWEpWhHK+Yo" crossorigin="anonymous" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.8/dist/umd/supabase.js"
+          integrity="sha384-M65KxMm/JqBppck6onbmAgPVMBHrmPCf1L17Q+71EcvI9/VVI8j5cqoxQf6lj6h2" crossorigin="anonymous"></script>
+  <script src="config.js"></script>
 </head>
 <body>
-  <div class="app">
+  <div id="boot-loading" class="boot-loading">Loading…</div>
+
+  <div id="auth-screen" class="hidden">
+    <div class="auth-card">
+      <h2 style="margin-bottom:.25rem"><i class="ti ti-heart" aria-hidden="true" style="color:#1D9E75"></i> Volunteer Hub</h2>
+      <p class="subtitle" style="margin-bottom:1.25rem">Sign in to manage your team</p>
+      <div id="auth-error" class="auth-error"></div>
+      <label>Email</label>
+      <input type="email" id="auth-email" placeholder="you@example.org" autocomplete="username">
+      <label style="margin-top:.5rem">Password</label>
+      <input type="password" id="auth-password" placeholder="••••••••" autocomplete="current-password">
+      <button class="btn btn-primary" style="width:100%;margin-top:1rem" onclick="signIn()"><i class="ti ti-login" aria-hidden="true"></i> Sign in</button>
+      <p class="subtitle" style="margin-top:1rem">No account? Ask your admin to invite you.</p>
+    </div>
+  </div>
+
+  <div class="app hidden" id="app-root">
     <h2 style="margin-bottom:.25rem"><i class="ti ti-heart" aria-hidden="true" style="color:#1D9E75"></i> Volunteer Hub</h2>
     <p class="subtitle">Manage your team, track hours &amp; reward dedication</p>
 
@@ -92,6 +111,11 @@
           <button class="btn" onclick="exportData()"><i class="ti ti-download" aria-hidden="true"></i> Export JSON</button>
           <button class="btn btn-danger" onclick="confirmReset()"><i class="ti ti-trash" aria-hidden="true"></i> Reset all data</button>
         </div>
+      </div>
+      <div class="card">
+        <h3>Account</h3>
+        <p class="subtitle" style="margin-bottom:.75rem" id="account-email"></p>
+        <button class="btn" onclick="signOut()"><i class="ti ti-logout" aria-hidden="true"></i> Sign out</button>
       </div>
     </div>
   </div>

@@ -2,38 +2,121 @@
 
 const COLORS = ['purple', 'teal', 'coral', 'blue', 'amber', 'pink'];
 
+// Used only to reseed the swag table on "Reset all data".
 const DEFAULT_SWAG = [
-  { id: 's1', name: 'Enamel pin',       emoji: '📌', desc: 'Exclusive org logo pin',       hrs: 10  },
-  { id: 's2', name: 'Tote bag',          emoji: '👜', desc: 'Heavy-duty canvas tote',        hrs: 25  },
-  { id: 's3', name: 'Hoodie',            emoji: '🧥', desc: 'Embroidered crew hoodie',       hrs: 50  },
-  { id: 's4', name: 'Insulated tumbler', emoji: '☕', desc: 'Custom 20oz tumbler',           hrs: 75  },
-  { id: 's5', name: 'Jacket',            emoji: '🧤', desc: 'Premium fleece zip-up',         hrs: 100 },
-  { id: 's6', name: 'Experience day',    emoji: '🌟', desc: 'VIP behind-the-scenes invite',  hrs: 150 },
+  { name: 'Enamel pin',       emoji: '📌', desc: 'Exclusive org logo pin',       hrs: 10  },
+  { name: 'Tote bag',          emoji: '👜', desc: 'Heavy-duty canvas tote',        hrs: 25  },
+  { name: 'Hoodie',            emoji: '🧥', desc: 'Embroidered crew hoodie',       hrs: 50  },
+  { name: 'Insulated tumbler', emoji: '☕', desc: 'Custom 20oz tumbler',           hrs: 75  },
+  { name: 'Jacket',            emoji: '🧤', desc: 'Premium fleece zip-up',         hrs: 100 },
+  { name: 'Experience day',    emoji: '🌟', desc: 'VIP behind-the-scenes invite',  hrs: 150 },
 ];
+
+// ─── Supabase client ─────────────────────────────────────────────────────────
+
+const configOk = !!(window.SUPABASE_CONFIG && window.SUPABASE_CONFIG.url && !window.SUPABASE_CONFIG.url.includes('YOUR_PROJECT'));
+const supabase = (configOk && window.supabase)
+  ? window.supabase.createClient(window.SUPABASE_CONFIG.url, window.SUPABASE_CONFIG.anonKey)
+  : null;
 
 // ─── State ───────────────────────────────────────────────────────────────────
 
 let state = { volunteers: [], logs: [], swag: [], groupName: 'My Volunteers' };
+let dataLoaded = false;
 
-// ─── Storage ─────────────────────────────────────────────────────────────────
+// ─── Auth ────────────────────────────────────────────────────────────────────
 
-function loadState() {
-  try {
-    const saved = localStorage.getItem('vhub_state');
-    if (saved) {
-      state = Object.assign(state, JSON.parse(saved));
-    } else {
-      state.swag = DEFAULT_SWAG;
-    }
-  } catch (e) {
-    state.swag = DEFAULT_SWAG;
+function showAuthScreen() {
+  document.getElementById('boot-loading')?.classList.add('hidden');
+  document.getElementById('app-root').classList.add('hidden');
+  document.getElementById('auth-screen').classList.remove('hidden');
+}
+
+function showApp(session) {
+  document.getElementById('boot-loading')?.classList.add('hidden');
+  document.getElementById('auth-screen').classList.add('hidden');
+  document.getElementById('app-root').classList.remove('hidden');
+  const emailEl = document.getElementById('account-email');
+  if (emailEl) emailEl.textContent = 'Signed in as ' + (session.user.email || '');
+}
+
+async function signIn() {
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const errEl = document.getElementById('auth-error');
+  errEl.textContent = '';
+  if (!email || !password) { errEl.textContent = 'Enter your email and password.'; return; }
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) errEl.textContent = error.message;
+}
+
+async function signOut() {
+  await supabase.auth.signOut();
+}
+
+function initAuth() {
+  if (!supabase) {
+    document.getElementById('boot-loading')?.classList.add('hidden');
+    document.getElementById('auth-error').textContent = !window.supabase
+      ? "Couldn't load the Supabase library — check your internet connection and reload."
+      : "Supabase isn't configured yet — copy config.example.js to config.js and fill in your project URL/anon key.";
+    document.getElementById('auth-screen').classList.remove('hidden');
+    return;
   }
-  if (!state.swag || !state.swag.length) state.swag = DEFAULT_SWAG;
+  supabase.auth.onAuthStateChange(async (event, session) => {
+    if (session) {
+      if (!dataLoaded) { dataLoaded = true; await loadState(); }
+      showApp(session);
+    } else {
+      dataLoaded = false;
+      state = { volunteers: [], logs: [], swag: [], groupName: 'My Volunteers' };
+      showAuthScreen();
+    }
+  });
+}
+
+// ─── Data loading ────────────────────────────────────────────────────────────
+
+async function loadState() {
+  try {
+    const [volRes, logRes, swagRes, settingsRes] = await Promise.all([
+      supabase.from('volunteers').select('*').order('created_at'),
+      supabase.from('logs').select('*'),
+      supabase.from('swag').select('*'),
+      supabase.from('app_settings').select('*').eq('id', 1).single(),
+    ]);
+    const failed = [volRes, logRes, swagRes, settingsRes].find(r => r.error);
+    if (failed) throw failed.error;
+    state = {
+      volunteers: volRes.data || [],
+      logs: logRes.data || [],
+      swag: swagRes.data || [],
+      groupName: settingsRes.data?.group_name || 'My Volunteers',
+    };
+  } catch (e) {
+    toast('Failed to load data — reload the page to try again.');
+    console.error(e);
+    return;
+  }
   render();
 }
 
-function saveState() {
-  localStorage.setItem('vhub_state', JSON.stringify(state));
+async function refetchVolunteers() {
+  const { data, error } = await supabase.from('volunteers').select('*').order('created_at');
+  if (error) { toast('Failed to load volunteers: ' + error.message); return; }
+  state.volunteers = data || [];
+}
+
+async function refetchLogs() {
+  const { data, error } = await supabase.from('logs').select('*');
+  if (error) { toast('Failed to load logs: ' + error.message); return; }
+  state.logs = data || [];
+}
+
+async function refetchSwag() {
+  const { data, error } = await supabase.from('swag').select('*');
+  if (error) { toast('Failed to load swag: ' + error.message); return; }
+  state.swag = data || [];
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -213,30 +296,30 @@ function openAddVol() {
     </div>`);
 }
 
-function saveVol(editId) {
+async function saveVol(editId) {
   const name = document.getElementById('m-name').value.trim();
   if (!name) { toast('Name is required.'); return; }
-  const vol = {
-    id: editId || 'v' + Date.now(), name,
-    role:              document.getElementById('m-role').value,
-    email:             document.getElementById('m-email').value,
-    phone:             document.getElementById('m-phone').value,
-    birthday:          document.getElementById('m-bday').value,
-    anniversary:       document.getElementById('m-ann').value,
-    food:              document.getElementById('m-food').value,
-    color:             document.getElementById('m-color').value,
-    hobby:             document.getElementById('m-hobby').value,
-    notes:             document.getElementById('m-notes').value,
-    custom_date_1_label: document.getElementById('m-cdl').value,
-    custom_date_1:     document.getElementById('m-cd').value,
+  const payload = {
+    name,
+    role:                 document.getElementById('m-role').value,
+    email:                document.getElementById('m-email').value,
+    phone:                document.getElementById('m-phone').value,
+    birthday:             document.getElementById('m-bday').value || null,
+    anniversary:          document.getElementById('m-ann').value || null,
+    food:                 document.getElementById('m-food').value,
+    color:                document.getElementById('m-color').value,
+    hobby:                document.getElementById('m-hobby').value,
+    notes:                document.getElementById('m-notes').value,
+    custom_date_1_label:  document.getElementById('m-cdl').value,
+    custom_date_1:        document.getElementById('m-cd').value || null,
   };
-  if (editId) {
-    const idx = state.volunteers.findIndex(v => v.id === editId);
-    state.volunteers[idx] = vol;
-  } else {
-    state.volunteers.push(vol);
-  }
-  saveState(); closeModal(); renderVols();
+  const { error } = editId
+    ? await supabase.from('volunteers').update(payload).eq('id', editId)
+    : await supabase.from('volunteers').insert(payload);
+  if (error) { toast('Save failed: ' + error.message); return; }
+  await refetchVolunteers();
+  closeModal();
+  renderVols();
   toast(editId ? 'Volunteer updated!' : 'Volunteer added! 🎉');
 }
 
@@ -309,11 +392,13 @@ function openEditVol(id) {
     </div>`);
 }
 
-function deleteVol(id) {
+async function deleteVol(id) {
   if (!confirm('Remove this volunteer and all their logs?')) return;
-  state.volunteers = state.volunteers.filter(v => v.id !== id);
-  state.logs = state.logs.filter(l => l.vid !== id);
-  saveState(); closeModal(); renderVols();
+  const { error } = await supabase.from('volunteers').delete().eq('id', id);
+  if (error) { toast('Delete failed: ' + error.message); return; }
+  await Promise.all([refetchVolunteers(), refetchLogs()]);
+  closeModal();
+  renderVols();
   toast('Volunteer removed.');
 }
 
@@ -326,15 +411,15 @@ function populateLogDropdown() {
   renderLogList();
 }
 
-function submitLog() {
+async function submitLog() {
   const vid  = document.getElementById('log-vol').value;
   const hrs  = +document.getElementById('log-hrs').value;
   const date = document.getElementById('log-date').value;
   const note = document.getElementById('log-note').value;
-  if (!vid || !hrs || hrs <= 0) { toast('Please select a volunteer and enter hours.'); return; }
-  const log = { id: 'l' + Date.now(), vid, hrs, date, note };
-  state.logs.push(log);
-  saveState();
+  if (!vid || !hrs || hrs <= 0 || !date) { toast('Please select a volunteer, date, and hours.'); return; }
+  const { error } = await supabase.from('logs').insert({ vid, hrs, date, note });
+  if (error) { toast('Log failed: ' + error.message); return; }
+  await refetchLogs();
   toast('Hours logged! ✓');
   document.getElementById('log-hrs').value = '';
   document.getElementById('log-note').value = '';
@@ -367,9 +452,11 @@ function renderLogList() {
     : '<div class="empty">No logs yet.</div>';
 }
 
-function deleteLog(id) {
-  state.logs = state.logs.filter(l => l.id !== id);
-  saveState(); renderLogList();
+async function deleteLog(id) {
+  const { error } = await supabase.from('logs').delete().eq('id', id);
+  if (error) { toast('Delete failed: ' + error.message); return; }
+  await refetchLogs();
+  renderLogList();
   toast('Entry removed.');
 }
 
@@ -388,15 +475,19 @@ function bulkLogOpen() {
     </div>`);
 }
 
-function submitBulkLog() {
+async function submitBulkLog() {
   const hrs  = +document.getElementById('bl-hrs').value;
   const date = document.getElementById('bl-date').value;
   const note = document.getElementById('bl-note').value;
-  if (!hrs || hrs <= 0) { toast('Enter valid hours.'); return; }
+  if (!hrs || hrs <= 0 || !date) { toast('Enter a valid date and hours.'); return; }
   const selected = state.volunteers.filter(v => document.getElementById('bl-' + v.id)?.checked);
   if (!selected.length) { toast('Select at least one volunteer.'); return; }
-  selected.forEach(v => state.logs.push({ id: 'l' + Date.now() + v.id, vid: v.id, hrs, date, note }));
-  saveState(); closeModal(); renderLogList();
+  const rows = selected.map(v => ({ vid: v.id, hrs, date, note }));
+  const { error } = await supabase.from('logs').insert(rows);
+  if (error) { toast('Log failed: ' + error.message); return; }
+  await refetchLogs();
+  closeModal();
+  renderLogList();
   toast(`Logged ${hrs}h for ${selected.length} volunteers!`);
   selected.forEach(v => checkSwagUnlock(v.id, hrs));
 }
@@ -454,8 +545,10 @@ function openSwagEdit() {
     </div>`);
 }
 
+let newSwagCounter = 0;
+
 function addSwagRow() {
-  const id = 's' + Date.now();
+  const id = 'new-' + (++newSwagCounter);
   const div = document.createElement('div');
   div.id = 'se-' + id;
   div.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:8px';
@@ -468,24 +561,53 @@ function removeSwagItem(id) {
   if (el) el.remove();
 }
 
-function saveSwag() {
+async function saveSwag() {
   const allIds = [...document.querySelectorAll('[id^="se-em-"]')].map(el => el.id.replace('se-em-', ''));
-  state.swag = allIds.map(id => ({
+  const rows = allIds.map(id => ({
     id,
     emoji: document.getElementById('se-em-' + id).value || '🎁',
     name:  document.getElementById('se-nm-' + id).value || 'Item',
     desc:  document.getElementById('se-dc-' + id).value || '',
     hrs:   +(document.getElementById('se-hr-' + id).value || 0),
   })).filter(s => s.name && s.hrs > 0);
-  saveState(); closeModal(); renderSwag();
+
+  const originalIds = new Set(state.swag.map(s => s.id));
+  const keptIds = new Set(rows.filter(r => !r.id.startsWith('new-')).map(r => r.id));
+  const toDelete = [...originalIds].filter(id => !keptIds.has(id));
+  const toInsert = rows.filter(r => r.id.startsWith('new-')).map(({ id, ...rest }) => rest);
+  const toUpdate = rows.filter(r => !r.id.startsWith('new-'));
+
+  try {
+    if (toDelete.length) {
+      const { error } = await supabase.from('swag').delete().in('id', toDelete);
+      if (error) throw error;
+    }
+    for (const row of toUpdate) {
+      const { id, ...rest } = row;
+      const { error } = await supabase.from('swag').update(rest).eq('id', id);
+      if (error) throw error;
+    }
+    if (toInsert.length) {
+      const { error } = await supabase.from('swag').insert(toInsert);
+      if (error) throw error;
+    }
+  } catch (e) {
+    toast('Save failed: ' + e.message);
+    return;
+  }
+  await refetchSwag();
+  closeModal(); renderSwag();
   toast('Swag rewards saved! 🎁');
 }
 
 // ─── Settings ─────────────────────────────────────────────────────────────────
 
-function saveGroupName() {
-  state.groupName = document.getElementById('group-name-input').value.trim() || 'My Volunteers';
-  saveState(); toast('Saved!');
+async function saveGroupName() {
+  const name = document.getElementById('group-name-input').value.trim() || 'My Volunteers';
+  const { error } = await supabase.from('app_settings').update({ group_name: name }).eq('id', 1);
+  if (error) { toast('Save failed: ' + error.message); return; }
+  state.groupName = name;
+  toast('Saved!');
 }
 
 function exportData() {
@@ -496,11 +618,25 @@ function exportData() {
   a.click();
 }
 
-function confirmReset() {
-  if (confirm('Reset ALL data? This cannot be undone.')) {
-    state = { volunteers: [], logs: [], swag: DEFAULT_SWAG, groupName: 'My Volunteers' };
-    saveState(); render(); toast('Data reset.');
+async function confirmReset() {
+  if (!confirm('Reset ALL data? This cannot be undone.')) return;
+  try {
+    let res = await supabase.from('logs').delete().not('id', 'is', null);
+    if (res.error) throw res.error;
+    res = await supabase.from('volunteers').delete().not('id', 'is', null);
+    if (res.error) throw res.error;
+    res = await supabase.from('swag').delete().not('id', 'is', null);
+    if (res.error) throw res.error;
+    res = await supabase.from('swag').insert(DEFAULT_SWAG);
+    if (res.error) throw res.error;
+    res = await supabase.from('app_settings').update({ group_name: 'My Volunteers' }).eq('id', 1);
+    if (res.error) throw res.error;
+  } catch (e) {
+    toast('Reset failed: ' + e.message);
+    return;
   }
+  await loadState();
+  toast('Data reset.');
 }
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
@@ -511,4 +647,4 @@ function render() {
   renderSwag();
 }
 
-loadState();
+initAuth();

@@ -249,3 +249,30 @@ h3 { font-size: 15px; font-weight: 500; margin-bottom: .5rem; }
   font-size: 11px; padding: 2px 8px;
   border-radius: 100px; font-weight: 500;
 }
+
+.hidden { display: none !important; }
+
+.boot-loading {
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+}
+
+#auth-screen {
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+}
+.auth-card {
+  background: var(--color-bg);
+  border: 0.5px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  width: min(340px, 90vw);
+}
+.auth-error {
+  font-size: 13px; color: #a32d2d;
+  background: #fcebeb; border-radius: var(--radius-md);
+  padding: 6px 10px; margin-bottom: .75rem;
+}
+.auth-error:empty { display: none; }
