@@ -34,6 +34,9 @@ jobs:
           test -s config.js || (echo "::error::config.js was not created" && exit 1)
           echo "Generated config.js ($(wc -c < config.js) bytes):"
           cat config.js
+          echo "deploy debug $(date -u)" > deploy-debug.txt
+          echo "--- workspace root listing ---"
+          ls -la
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
