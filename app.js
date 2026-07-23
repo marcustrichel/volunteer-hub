@@ -59,7 +59,7 @@ function initAuth() {
     document.getElementById('boot-loading')?.classList.add('hidden');
     document.getElementById('auth-error').textContent = !window.supabase
       ? "Couldn't load the Supabase library — check your internet connection and reload."
-      : "Supabase isn't configured yet — copy config.example.js to config.js and fill in your project URL/anon key.";
+      : "Supabase isn't configured for this deployment — check the SUPABASE_URL/SUPABASE_ANON_KEY secrets on the production environment.";
     document.getElementById('auth-screen').classList.remove('hidden');
     return;
   }
