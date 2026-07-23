@@ -4,12 +4,12 @@ const COLORS = ['purple', 'teal', 'coral', 'blue', 'amber', 'pink'];
 
 // Used only to reseed the swag table on "Reset all data".
 const DEFAULT_SWAG = [
-  { name: 'Enamel pin',       emoji: '📌', desc: 'Exclusive org logo pin',       hrs: 10  },
-  { name: 'Tote bag',          emoji: '👜', desc: 'Heavy-duty canvas tote',        hrs: 25  },
-  { name: 'Hoodie',            emoji: '🧥', desc: 'Embroidered crew hoodie',       hrs: 50  },
-  { name: 'Insulated tumbler', emoji: '☕', desc: 'Custom 20oz tumbler',           hrs: 75  },
-  { name: 'Jacket',            emoji: '🧤', desc: 'Premium fleece zip-up',         hrs: 100 },
-  { name: 'Experience day',    emoji: '🌟', desc: 'VIP behind-the-scenes invite',  hrs: 150 },
+  { name: 'Enamel pin',       emoji: '📌', description: 'Exclusive org logo pin',       hrs: 10  },
+  { name: 'Tote bag',          emoji: '👜', description: 'Heavy-duty canvas tote',        hrs: 25  },
+  { name: 'Hoodie',            emoji: '🧥', description: 'Embroidered crew hoodie',       hrs: 50  },
+  { name: 'Insulated tumbler', emoji: '☕', description: 'Custom 20oz tumbler',           hrs: 75  },
+  { name: 'Jacket',            emoji: '🧤', description: 'Premium fleece zip-up',         hrs: 100 },
+  { name: 'Experience day',    emoji: '🌟', description: 'VIP behind-the-scenes invite',  hrs: 150 },
 ];
 
 // ─── Supabase client ─────────────────────────────────────────────────────────
@@ -500,7 +500,7 @@ function renderSwag() {
     <div class="swag-item">
       <div class="swag-icon">${escapeHtml(s.emoji)}</div>
       <div class="swag-name">${escapeHtml(s.name)}</div>
-      <div class="swag-desc">${escapeHtml(s.desc)}</div>
+      <div class="swag-desc">${escapeHtml(s.description)}</div>
       <div class="swag-hrs">${s.hrs} hrs</div>
     </div>`).join('');
 
@@ -534,7 +534,7 @@ function openSwagEdit() {
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px" id="se-${s.id}">
         <input style="width:44px" value="${escapeHtml(s.emoji)}" id="se-em-${s.id}" placeholder="🎁">
         <input style="flex:1" value="${escapeHtml(s.name)}" id="se-nm-${s.id}" placeholder="Item name">
-        <input style="flex:1.5" value="${escapeHtml(s.desc)}" id="se-dc-${s.id}" placeholder="Description">
+        <input style="flex:1.5" value="${escapeHtml(s.description)}" id="se-dc-${s.id}" placeholder="Description">
         <input style="width:64px" type="number" value="${s.hrs}" id="se-hr-${s.id}" placeholder="hrs">
         <button class="btn btn-sm btn-danger" onclick="removeSwagItem('${s.id}')"><i class="ti ti-trash" aria-hidden="true"></i></button>
       </div>`).join('')}</div>
@@ -567,7 +567,7 @@ async function saveSwag() {
     id,
     emoji: document.getElementById('se-em-' + id).value || '🎁',
     name:  document.getElementById('se-nm-' + id).value || 'Item',
-    desc:  document.getElementById('se-dc-' + id).value || '',
+    description: document.getElementById('se-dc-' + id).value || '',
     hrs:   +(document.getElementById('se-hr-' + id).value || 0),
   })).filter(s => s.name && s.hrs > 0);
 

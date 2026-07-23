@@ -43,12 +43,12 @@ create table swag (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   emoji text not null default '🎁',
-  desc text,
+  description text,
   hrs numeric not null check (hrs > 0),
   created_at timestamptz not null default now()
 );
 
-insert into swag (name, emoji, desc, hrs) values
+insert into swag (name, emoji, description, hrs) values
   ('Enamel pin', '📌', 'Exclusive org logo pin', 10),
   ('Tote bag', '👜', 'Heavy-duty canvas tote', 25),
   ('Hoodie', '🧥', 'Embroidered crew hoodie', 50),
